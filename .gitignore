@@ -1,0 +1,5 @@
+.c9/
+
+# Ignore compiled C files
+*.cgi
+
