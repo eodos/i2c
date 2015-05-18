@@ -7,9 +7,9 @@ int main() {
 
 	FILE * f;
 	char * data;
-	char * pch[20];
-	char * vars[20];
-	char values[20];
+	char * pch[99];
+	char * vars[99];
+	char * values[99];
 	char * nombre_fichero;
 	json_value * json_obj = json_object_new(0);
 
@@ -35,10 +35,12 @@ int main() {
 			f = fopen((char *) nombre_fichero,"r");
 
 			if (f != NULL) {
-				fscanf(f, "%s", &values[i]);
-				json_object_push(json_obj, (json_char *) &vars[i], json_string_new(&values[i]));
+				fgets((char *)&values[i], 100, f);
+				
 				fclose(f);
 			}
+			
+			json_object_push(json_obj, (json_char *) &vars[i], json_string_new((char *)&values[i]));
 		}
 
 		char * buf = malloc(json_measure(json_obj));

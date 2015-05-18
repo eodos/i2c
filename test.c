@@ -5,11 +5,8 @@
 #include <string.h>
 
 #include <fcntl.h> // O_CREAT
-#include <sys/stat.h> // S_IROTH, S_IWOTH
-
 
 sem_t * sem;
-
 
 int main() {
 

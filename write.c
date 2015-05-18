@@ -6,23 +6,31 @@ int main() {
 
 	FILE *f;
 	char *data;
-	char var[20];
+	char * pch[99];
 	char * nombre_fichero;
-	int value;
 
 	printf("Content-Type: application/json\n\n");
 
 	data = getenv("QUERY_STRING");
 
-	if (data != NULL)
-		sscanf(data,"%[^'=']=%d",&var,&value);
+	if (data != NULL) {
 
-	nombre_fichero=ruta(var);
+		int i=0;
+		pch[0] = (char *) strtok(data,"=");
+
+		while (pch[i] != NULL) {
+			i++;
+			pch[i] = (char *) strtok(NULL,"=");
+		}
+
+	}
+
+	nombre_fichero = ruta(pch[0]);
 
 	f = fopen(nombre_fichero,"w");
 
 	if (f != NULL) {
-		fprintf(f, "%d",value);
+		fprintf(f, "%s", pch[1]);
 		fclose(f);
 		printf("Success");
 	}

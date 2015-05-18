@@ -19,13 +19,14 @@ char * ruta(char * variable) {
 char * readVar(char * variable) {
 	FILE * f;
 	char * nombre_fichero;
-	char * value = malloc(10 * sizeof(char));
+	//char * value = malloc(99 * sizeof(char));
+	char * value;
 
-	nombre_fichero = ruta((char *) variable);
-	f = fopen((char *) nombre_fichero,"r");
+	nombre_fichero = ruta(variable);
+	f = fopen((char *)nombre_fichero, "r");
 
 	if (f != NULL) {
-		fscanf(f, "%s", &value);
+		fgets((char *)&value, 100, f);
 		fclose(f);
 	}
 	return value;
