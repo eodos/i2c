@@ -109,3 +109,71 @@ int readSensor(int device, char * sensor, uint nBytesSend, uint nBytesReceive) {
 	close(fd);
 	return value;
 }
+
+uint processOutput(float temperature, int rain, int humidity, int forecast, int actuator, long t_actuator) {
+	uint temp;
+	temp = 0;
+	if (actuator == 0) {
+		if (humidity != -1 && forecast != -1) { // sensor de humedad y pronóstico funcionan
+			if (humidity < 50 && rain != 1 && forecast > 0) //humedad < 50, no llueve ni va a llover hoy
+				temp = 1;
+			else if (humidity < 40 && rain != 1) // humedad < 40, no está lloviendo pero hoy va a llover
+				temp = 1;
+			else if (humidity < 35) // crítico: humedad < 35
+				temp = 1;
+		}
+
+		else if (humidity != -1) { // no tenemos pronóstico
+			if (humidity < 50 && rain != 1) // humedad < 40, no está lloviendo
+				temp = 1;
+			else if (humidity < 35) // crítico: humedad < 35
+				temp = 1;
+		}
+
+		else if (forecast != -1) { // sensor de humedad no funciona
+			if (forecast > 0 && rain != 1 && t_actuator > 43200) temp = 1; // no está lloviendo ni va a llover hoy pero hace mas de 12 horas que no se enciende
+			else if (rain != 1 && t_actuator > 64800) temp = 1; // va a llover pero hace mas de 18 horas que no se enciende
+		}
+
+		else // no funciona el sensor de humedad ni hay pronóstico
+			if (rain != 1 && t_actuator > 43200) temp = 1; // no llueve y hace mas de 12 horas que no se enciende
+	}
+
+	else {
+		if (humidity != -1) { //funciona el sensor de humedad
+			if (humidity > 60) temp = 1; // apagamos el actuator si la humedad > 60
+		}
+		else { // no funciona el sensor de humedad
+			if (t_actuator > 1800) temp = 1; // si el riego lleva 30 minutos encendido
+		}
+	}
+
+	return temp;
+}
+
+int setActuator(int device, int signal) {
+
+	int fd;
+	unsigned char cmd[16];
+	char buff[1];
+	int recibido = 0;
+	
+	if ((fd = open("/dev/i2c-0", O_RDWR)) >= 0) {
+
+		if (ioctl(fd, I2C_SLAVE, device) >= 0) {
+		
+			cmd[0] = signal;
+			if (write(fd, cmd, 1) == 1) {
+				usleep(10000);
+				if (read(fd, buff, 1) == 1) {
+					recibido = (int) buff[0];
+				}
+			}
+		}
+	}
+
+	close(fd);
+
+	return recibido;
+
+}

@@ -1,8 +1,8 @@
 #!/usr/bin/python2
 
 # Este programa realiza una peticipn a la API de Yahoo Weather para obtener el pronostico del tiempo de 4 dias y analiza si alguno de ellos
-# indica lluvia. En caso afirmativo almacena el numero del dia en el fichero. En caso negativo almacena -1. Si no puede conectar al servidor 
-# escribe NULL. Obtiene la localizacion de la cual buscar el pronostico del fichero vars/LOCATION. Debe estar en formato "Ciudad, Pais". 
+# indica lluvia. En caso afirmativo almacena el numero del dia en el fichero. En caso negativo almacena 4. Si no puede conectar al servidor 
+# escribe -1. Obtiene la localizacion de la cual buscar el pronostico del fichero vars/LOCATION. Debe estar en formato "Ciudad, Pais". 
 # Guarda la salida en vars/FORECAST.
 
 import urllib2, urllib, json
@@ -11,7 +11,9 @@ from time import sleep
 while True:
 
 	forecast = [0,0,0,0]
-	next_rain = -1
+
+	# Si ninguno de los 4 dias de pronostico va a llover, almacenamos un 4
+	next_rain = 4
 
 	# Leemos el tiempo de espera entre dos peticiones para obtener el pronostico, en minutos
 	f = open("vars/FORECAST_RATE", 'r')
@@ -42,9 +44,9 @@ while True:
 				next_rain = i
 				break
 
-	# Si no podemos conectar a la API, escribimos NULL en el fichero salida
+	# Si no podemos conectar a la API, escribimos -1 en el fichero salida
 	except:
-		next_rain = "NULL"
+		next_rain = -1
 
 	f = open("vars/FORECAST", 'w')
 	f.write(str(next_rain))

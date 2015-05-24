@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h> // O_CREAT
+#include <time.h>
 #include <semaphore.h>
 #include "functions.h"
 
@@ -16,6 +17,9 @@
 #define TAG_RAIN "RAIN"
 #define TAG_HUM "HUMIDITY"
 #define TAG_ACTUATOR "ACTUATOR"
+#define TAG_TIME_ACTUATOR "TIME_ACTUATOR"
+
+#define ACTUATOR_SIGNAL 1
 
 int main() {
 	char * buf;
@@ -32,16 +36,23 @@ int main() {
 	uint nBytesHUM = 3;
 
 	float temperature;
-	uint rain;
-	uint humidity;
+	int rain;
+	int humidity;
 	int forecast;
-	uint actuator;
+	int actuator = 0;
 
-	char temperature_char[] = {0};
-	char rain_char[] = {0};
-	char humidity_char[] = {0};
-	char forecast_char[] = {0};
-	char actuator_char[] = {0};
+	char temperature_char[10];
+	char rain_char[10];
+	char humidity_char[10];
+	char forecast_char[10];
+	char actuator_char[10];
+	char time_char[10];
+
+	time_t t_comienzo = time (NULL);
+	time_t t_actual = time(NULL);
+	long t_actuator = 0;	
+	uint cambio_actuator = 0;
+	int actuator_success;
 
 	int pid, status;
 
@@ -94,8 +105,30 @@ int main() {
 			buf = readVar(TAG_FORECAST);
 			forecast = atoi((char *) &buf);
 
+			// Comprobamos que no haya fallos en los sensores
+			if (temperature < 0 || temperature > 50) temperature = -1;
+			if (rain != 0 && rain != 1) rain = -1;
+			if (humidity < 0 || humidity > 100) humidity = -1;
+
 			// Algoritmo para el encendido del sistema de riego
-			actuator = 0;
+			cambio_actuator = processOutput(temperature, rain, humidity, forecast, actuator, t_actuator);
+			if (cambio_actuator == 1) {
+				if (actuator == 1) actuator = 0;
+				else actuator = 1;
+				t_comienzo = time(NULL);
+			}
+
+			t_actual = time(NULL);
+			t_actuator = difftime(t_actual, t_comienzo);
+
+			// Envio de la orden al actuador
+			if (cambio_actuator == 1) {
+				do {
+					printf("Enviando señal al actuador\n");
+					actuator_success = setActuator(ARDUINO, ACTUATOR_SIGNAL);
+					sleep(5);
+				} while(actuator_success != 1);
+			}
 
 			// Convertimos los valores a char*
 			sprintf(temperature_char, "%.2f", temperature);
@@ -103,16 +136,18 @@ int main() {
 			sprintf(humidity_char, "%d", humidity);
 			sprintf(forecast_char, "%d", forecast);
 			sprintf(actuator_char, "%d", actuator);
+			sprintf(time_char, "%d", t_actuator);
 
 			// Creamos los char** que cotienen variables y vectores
-			char * variables_array[] = {TAG_TIMESTAMP, TAG_TEMP, TAG_RAIN, TAG_HUM, TAG_FORECAST, TAG_ACTUATOR, NULL};
-			char * values_array[] = {timestamp, temperature_char, rain_char, humidity_char, forecast_char, actuator_char, NULL};
+			char * variables_array[] = {TAG_TIMESTAMP, TAG_TEMP, TAG_RAIN, TAG_HUM, TAG_FORECAST, TAG_ACTUATOR, TAG_TIME_ACTUATOR, NULL};
+			char * values_array[] = {timestamp, temperature_char, rain_char, humidity_char, forecast_char, actuator_char, time_char, NULL};
 
 			printf("%s: %s\n", TAG_TEMP, temperature_char);
 			printf("%s: %s\n", TAG_RAIN, rain_char);
 			printf("%s: %s\n", TAG_HUM, humidity_char);
 			printf("%s: %s\n", TAG_FORECAST, forecast_char);
 			printf("%s: %s\n", TAG_ACTUATOR, actuator_char);
+			printf("%s: %s\n", TAG_TIME_ACTUATOR, time_char);
 			printf("%s\n", timestamp);
 
 			// Guardamos en el log los valores
