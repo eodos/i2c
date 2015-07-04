@@ -9,19 +9,19 @@ import urllib2, urllib, json
 from time import sleep
 
 while True:
-
+	sleep(10)
 	forecast = [0,0,0,0]
 
 	# Si ninguno de los 4 dias de pronostico va a llover, almacenamos un 4
 	next_rain = 4
 
 	# Leemos el tiempo de espera entre dos peticiones para obtener el pronostico, en minutos
-	f = open("vars/FORECAST_RATE", 'r')
+	f = open("/srv/http/cgi-bin/vars/FORECAST_RATE", 'r')
 	rate = f.read()
 	f.close()
 
 	# Leemos la localizacion de la cual obtener el pronostico
-	f = open("vars/LOCATION", 'r')
+	f = open("/srv/http/cgi-bin/vars/LOCATION", 'r')
 	location = f.read()
 	f.close()
 
@@ -48,7 +48,7 @@ while True:
 	except:
 		next_rain = -1
 
-	f = open("vars/FORECAST", 'w')
+	f = open("/srv/http/cgi-bin/vars/FORECAST", 'w')
 	f.write(str(next_rain))
 	f.close()
 

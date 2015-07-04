@@ -7,7 +7,7 @@
 
 char * ruta(char * variable) {
 	char * temp;
-	char * directorio = "vars/";
+	char * directorio = "/srv/http/cgi-bin/vars/";
 	if((temp = malloc(strlen(directorio)+strlen(variable)+1)) != NULL) {
 		temp[0]='\0';
 		strcat(temp, directorio);
@@ -110,41 +110,41 @@ int readSensor(int device, char * sensor, uint nBytesSend, uint nBytesReceive) {
 	return value;
 }
 
-uint processOutput(float temperature, int rain, int humidity, int forecast, int actuator, long t_actuator) {
+uint processOutput(float temperature, int rain, int humidity, int forecast, int actuator, long t_actuator, int humidity_min, int humidity_forecast_min, int humidity_critical_min, int humidity_off, int humidity_time, int humidity_forecast_time, int humidity_time_off) {
 	uint temp;
 	temp = 0;
 	if (actuator == 0) {
-		if (humidity != -1 && forecast != -1) { // sensor de humedad y pronóstico funcionan
-			if (humidity < 50 && rain != 1 && forecast > 0) //humedad < 50, no llueve ni va a llover hoy
+		if (humidity != -1 && forecast != -1) { // sensor de h¼umedad y pronóstico funcionan
+			if (humidity < humidity_min && rain != 1 && forecast > 0) //humedad < 50, no llueve ni va a llover hoy
 				temp = 1;
-			else if (humidity < 40 && rain != 1) // humedad < 40, no está lloviendo pero hoy va a llover
+			else if (humidity < humidity_forecast_min && rain != 1) // humedad < 40, no está lloviendo pero hoy va a llover
 				temp = 1;
-			else if (humidity < 35) // crítico: humedad < 35
+			else if (humidity < humidity_critical_min) // crítico: humedad < 35
 				temp = 1;
 		}
 
 		else if (humidity != -1) { // no tenemos pronóstico
-			if (humidity < 50 && rain != 1) // humedad < 40, no está lloviendo
+			if (humidity < humidity_min && rain != 1) // humedad < 50, no está lloviendo
 				temp = 1;
-			else if (humidity < 35) // crítico: humedad < 35
+			else if (humidity < humidity_critical_min) // crítico: humedad < 35
 				temp = 1;
 		}
 
 		else if (forecast != -1) { // sensor de humedad no funciona
-			if (forecast > 0 && rain != 1 && t_actuator > 43200) temp = 1; // no está lloviendo ni va a llover hoy pero hace mas de 12 horas que no se enciende
-			else if (rain != 1 && t_actuator > 64800) temp = 1; // va a llover pero hace mas de 18 horas que no se enciende
+			if (forecast > 0 && rain != 1 && t_actuator > humidity_time) temp = 1; // no está lloviendo ni va a llover hoy pero hace mas de 12 horas que no se enciende
+			else if (rain != 1 && t_actuator > humidity_forecast_time) temp = 1; // va a llover pero hace mas de 18 horas que no se enciende
 		}
 
 		else // no funciona el sensor de humedad ni hay pronóstico
-			if (rain != 1 && t_actuator > 43200) temp = 1; // no llueve y hace mas de 12 horas que no se enciende
+			if (rain != 1 && t_actuator > humidity_time) temp = 1; // no llueve y hace mas de 12 horas que no se enciende
 	}
 
 	else {
 		if (humidity != -1) { //funciona el sensor de humedad
-			if (humidity > 60) temp = 1; // apagamos el actuator si la humedad > 60
+			if (humidity > humidity_off) temp = 1; // apagamos el actuator si la humedad > 60
 		}
 		else { // no funciona el sensor de humedad
-			if (t_actuator > 1800) temp = 1; // si el riego lleva 30 minutos encendido
+			if (t_actuator > humidity_time_off) temp = 1; // si el riego lleva 30 minutos encendido
 		}
 	}
 

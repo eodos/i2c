@@ -19,6 +19,14 @@
 #define TAG_ACTUATOR "ACTUATOR"
 #define TAG_TIME_ACTUATOR "TIME_ACTUATOR"
 
+#define TAG_HUMIDITY "HUMIDITY"
+#define TAG_HUMIDITY_FORECAST "HUMIDITY_FORECAST"
+#define TAG_HUMIDITY_CRITICAL "HUMIDITY_CRITICAL"
+#define TAG_HUMIDITY_OFF "HUMIDITY_OFF"
+#define TAG_HUMIDITY_TIME "HUMIDITY_TIME"
+#define TAG_HUMIDITY_FORECAST_TIME "HUMIDITY_FORECAST_TIME"
+#define TAG_HUMIDITY_TIME_OFF "HUMIDITY_TIME_OFF"
+
 #define ACTUATOR_SIGNAL 1
 
 int main() {
@@ -54,6 +62,14 @@ int main() {
 	uint cambio_actuator = 0;
 	int actuator_success;
 
+	int humidity_rate;
+	int humidity_forecast;
+	int humidity_critical;
+	int humidity_off;
+	int humidity_time;
+	int humidity_forecast_time;
+	int humidity_time_off;
+
 	int pid, status;
 
 	sem_t * sem;
@@ -74,7 +90,7 @@ int main() {
 	pid = fork();
 
 	if (pid == 0) {
-		execlp("python", "python", "weather_forecast.py", NULL);
+		execlp("python", "python", "/srv/http/cgi-bin/weather_forecast.py", NULL);
 		exit(0);
 	}
 
@@ -88,9 +104,33 @@ int main() {
 			refresh_rate = atoi((char *) &buf);
 			printf("%s: %d\n", TAG_REFRESH_RATE, refresh_rate);
 
+			// Leemos parámetros avanzados
+			buf = readVar(TAG_HUMIDITY);
+			humidity_rate = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY, humidity_rate);
+			buf = readVar(TAG_HUMIDITY_FORECAST);
+			humidity_forecast = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY_FORECAST, humidity_forecast);
+			buf = readVar(TAG_HUMIDITY_CRITICAL);
+			humidity_critical = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY_CRITICAL, humidity_critical);
+			buf = readVar(TAG_HUMIDITY_OFF);
+			humidity_off = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY_OFF, humidity_off);
+			buf = readVar(TAG_HUMIDITY_TIME);
+			humidity_time = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY_TIME, humidity_time);
+			buf = readVar(TAG_HUMIDITY_FORECAST_TIME);
+			humidity_forecast_time = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY_FORECAST_TIME, humidity_forecast_time);
+			buf = readVar(TAG_HUMIDITY_TIME_OFF);
+			humidity_time_off = atoi((char *) &buf);
+			printf("%s: %d\n", TAG_HUMIDITY_TIME_OFF, humidity_time_off);
+
 			// Ajustamos el valor del semáforo con nombre
 			time_to_wait.tv_sec = time(NULL) + refresh_rate;
-		
+			
+
 			// Leemos los valores se los sensores
 			temperature = readSensor(TI, TAG_TEMP, nBytesTAG_TEMP, nBytesTEMP) / 100.00;
 			usleep(50000);
@@ -111,7 +151,7 @@ int main() {
 			if (humidity < 0 || humidity > 100) humidity = -1;
 
 			// Algoritmo para el encendido del sistema de riego
-			cambio_actuator = processOutput(temperature, rain, humidity, forecast, actuator, t_actuator);
+			cambio_actuator = processOutput(temperature, rain, humidity, forecast, actuator, t_actuator, humidity_rate, humidity_forecast, humidity_critical, humidity_off, humidity_time, humidity_forecast_time, humidity_time_off);
 			if (cambio_actuator == 1) {
 				if (actuator == 1) actuator = 0;
 				else actuator = 1;
